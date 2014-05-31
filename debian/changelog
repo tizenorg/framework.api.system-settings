@@ -1,0 +1,34 @@
+capi-system-system-settings (0.0.1-7ubuntu1) precise; urgency=low
+
+  * release 
+  * font-type API refinement
+
+ -- mjpark <mjpark@localhost>  Wed, 23 Jan 2013 15:25:21 +0900
+
+capi-system-system-settings (0.0.1-7) unstable; urgency=low
+
+  * release
+
+ -- MyoungJune Park <mj2004.park@samsung.com>  Tue, 04 Sep 2012 10:34:54 +0900
+
+capi-system-system-settings (0.0.1-6) unstable; urgency=low
+
+  * tizen build
+
+ -- MyoungJune Park <mj2004.park@samsung.com>  Tue, 14 Aug 2012 10:20:07 +0900
+
+capi-system-system-settings (0.0.1-5) unstable; urgency=low
+
+  * Initial upload
+  * Git: slp/api/system-settings
+  * Tag: capi-system-system-settings_0.0.1-5
+
+ -- MyoungJune Park <mj2004.park@samsung.com>  Mon, 21 May 2012 15:45:32 +0900
+
+capi-system-system-settings (0.0.1-1) unstable; urgency=low
+
+  * Initial upload
+  * Git: slp-info.sec.samsung.net:slp/api/system-settings
+  * Tag: capi-system-system-settings_0.0.1-1
+
+ -- Junghyuk Park <junghyuk.park@samsung.com>  Tue, 06 Dec 2011 21:16:07 +0900

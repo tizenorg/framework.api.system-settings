@@ -1,0 +1,8 @@
+<manifest>
+    <request>
+        <domain name="_"/>
+    </request>
+	<assign>
+		<filesystem path="/usr/local/bin/test_system_settings_gui" exec_label="none"/>
+	</assign>
+</manifest>

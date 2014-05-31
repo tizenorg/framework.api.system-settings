@@ -1,0 +1,22 @@
+
+Source: capi-system-system-settings
+Section: libs
+Priority: extra
+Maintainer: Woongsuk Cho <ws77.cho@samsung.com>, junghyuk park <junghyuk.park@samsung.com>, MyoungJune Park <mj2004.park@samsung.com>
+Build-Depends: debhelper (>= 5), libecore-dev, dlog-dev, libelm-dev, libappcore-efl-dev, libvconf-dev, capi-base-common-dev, libfontconfig1-dev, libxml2-dev ,libglib2.0-dev
+
+Package: capi-system-system-settings
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A System Settings library in Tizen Native API
+
+Package: capi-system-system-settings-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, capi-system-system-settings (= ${Source-Version}), capi-base-common-dev
+Description: A System Settings library in Tizen Native API (DEV)
+
+Package: capi-system-system-settings-dbg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, capi-system-system-settings (= ${Source-Version})
+Description: A System Settings library in Tizen Native API (DBG)
+
