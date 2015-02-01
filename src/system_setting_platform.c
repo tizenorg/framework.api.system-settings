@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #include <string.h>
 #include <sys/types.h>
@@ -46,9 +47,21 @@
 #include <system_settings.h>
 #include <system_settings_private.h>
 
+#include <efl_assist.h>
+
+#ifdef TIZEN_WEARABLE
+#define SMALL_FONT_DPI                      (-90)
+#endif
+#ifdef TIZEN_MOBILE
 #define SMALL_FONT_DPI                      (-80)
+#endif
 #define MIDDLE_FONT_DPI                     (-100)
-#define LARGE_FONT_DPI                      (-120)
+#ifdef TIZEN_WEARABLE
+#define LARGE_FONT_DPI                      (-110)
+#endif
+#ifdef TIZEN_MOBILE
+#define LARGE_FONT_DPI                      (-150)
+#endif
 #define HUGE_FONT_DPI                       (-190)
 #define GIANT_FONT_DPI                      (-250)
 
@@ -58,7 +71,12 @@
 #define SETTING_FONT_CONF_FILE "/opt/etc/fonts/conf.avail/99-slp.conf"
 #define SETTING_DEFAULT_FONT_CONF_FILE "/usr/opt/etc/fonts/conf.avail/99-slp.conf"
 
-#define SETTING_STR_SLP_LEN  256
+#define SETTING_STR_LEN  256
+
+#define SETTING_TIME_ZONEINFO_PATH 		"/usr/share/zoneinfo/"
+#define SETTING_TIME_SHARE_LOCAL_PATH 	"/usr/share/locale"
+#define SETTING_TZONE_SYMLINK_PATH		"/opt/etc/localtime"
+
 
 static char* _get_cur_font();
 static void __font_size_set();
@@ -211,7 +229,7 @@ int system_setting_get_3g_data_network(system_settings_key_e key, system_setting
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if SUPPORT_ACCESSIBILITY
+
 int system_setting_get_tap_and_hold_delay(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
 {
 	char* vconf_value = NULL;
@@ -234,7 +252,7 @@ int system_setting_get_tap_and_hold_delay(system_settings_key_e key, system_sett
 	*value = (void*)val;		// float
 	return SYSTEM_SETTINGS_ERROR_NONE;
 }
-#endif
+
 /**
  * get current lock scren app package name (string)
  *
@@ -384,6 +402,118 @@ bool __is_supported_image_type_by_ext(char* file_path)
 	}
     return ret;
 }
+#ifdef TIZEN_WEARABLE
+static int system_setting_get_extended_wallpaper_num(const char * file_path, unsigned int * num)
+{
+	char buffer[256];
+	const char * find_str = "extended_wallpaper_";
+	char * ch = NULL;
+
+	if(!(ch = strstr(file_path, find_str))) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	strncpy(buffer, file_path, ch - file_path);
+	buffer[ch - file_path] = 0;
+	sprintf(buffer + (ch - file_path), "%s%s", "", ch + strlen(find_str));
+
+	if( !isdigit(buffer[0]) ) {
+		SETTING_TRACE("%s is not number", buffer);
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	*num = atoi(buffer);
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+static int system_setting_copy_extended_wallpaper(const char * dest_file_path, const char * source_file_path )
+{
+	if( !source_file_path || !dest_file_path ) {
+		return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
+	}
+
+	char buf[1024];
+
+	int fd;
+	fd = open(source_file_path, O_RDONLY);
+	if( fd < 0 ) {
+		SETTING_TRACE("file open failed: %s", source_file_path);
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	int fd2;
+	fd2 = open(dest_file_path, O_WRONLY | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO );
+	if( fd2 < 0 ) {
+		SETTING_TRACE("file creation failed: %s", dest_file_path);
+		close(fd);
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	while( read(fd, buf, sizeof(buf)-1) > 0 ) {
+		write(fd2, buf, sizeof(buf)-1);
+	}
+
+	close(fd2);
+	close(fd);
+
+	if(chmod(dest_file_path, S_IRWXU | S_IRWXG | S_IRWXO) < 0 ) {
+		SETTING_TRACE("chmod failed: %s", dest_file_path);
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+static int system_setting_remove_oldest_extended_wallpaper()
+{
+	DIR * dp;
+	struct dirent *dirp;
+	char * min_image_name = NULL;
+	unsigned int min_image_num = 0;
+	unsigned int temp_image_num = 0;
+	int image_count = 0;
+
+	if((dp = opendir("/opt/usr/data/setting/wallpaper")) == NULL ) {
+		SETTING_TRACE("opendir error");
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	while( (dirp = readdir(dp)) ) {
+		if( !strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..") )
+			continue;
+
+		if( system_setting_get_extended_wallpaper_num(dirp->d_name, &temp_image_num)
+				!= SYSTEM_SETTINGS_ERROR_NONE ) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+		if( (image_count == 0) || (min_image_num > temp_image_num) ) {
+			min_image_num = temp_image_num;
+			min_image_name = dirp->d_name;
+		}
+
+		image_count++;
+	}
+
+	char buf[512];
+	if( min_image_name ) {
+		snprintf(buf, sizeof(buf)-1, "/opt/usr/data/setting/wallpaper/%s", min_image_name);
+		if( remove(buf) < 0 ) {	// remove oldest image
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+static int system_setting_check_extended_wallpaper(const char * file_path)
+{
+	if( !file_path || !strlen(file_path) )
+		return 0;
+	return (strstr(file_path, "/opt/usr/media/.bgwallpaper") != NULL);
+}
+
+#define WALLPAPER_MAX_COUNT		10
+#endif
 
 int system_setting_set_wallpaper_home_screen(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
 {
@@ -404,10 +534,81 @@ int system_setting_set_wallpaper_home_screen(system_settings_key_e key, system_s
 	// error handling here
 	if (_is_file_accessible(vconf_value) != 0)
 		return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
-
+#ifdef TIZEN_MOBILE
 	if (system_setting_vconf_set_value_string(VCONFKEY_BGSET, vconf_value)) {
 		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
 	}
+#endif
+
+#ifdef TIZEN_WEARABLE
+	if( system_setting_check_extended_wallpaper(vconf_value) )	// New extended wallpaper
+	{
+		DIR * dp;
+		struct dirent *dirp;
+		unsigned int max_image_num = 0;
+		unsigned int temp_image_num = 0;
+		int image_count = 0;
+
+		if((dp = opendir("/opt/usr/data/setting/wallpaper")) == NULL ) {
+			SETTING_TRACE("Setting - dir open error!");
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+		/* Check a max number of wallpapers */
+		while( (dirp = readdir(dp)) ) {
+			if( !strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..") )
+				continue;
+
+			if( system_setting_get_extended_wallpaper_num(dirp->d_name, &temp_image_num)
+					!= SYSTEM_SETTINGS_ERROR_NONE ) {
+				return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+			}
+
+			if( (image_count == 0) || (max_image_num < temp_image_num) ) {
+				max_image_num = temp_image_num;
+			}
+
+			image_count++;
+		}
+
+		/* Numbering rule: Gear is odd number */
+		max_image_num = (max_image_num % 2 == 0) ? max_image_num + 1
+												 : max_image_num + 2;
+
+		char file_name_buffer[512];
+		snprintf(file_name_buffer, sizeof(file_name_buffer)-1,
+				"/opt/usr/data/setting/wallpaper/extended_wallpaper_%d.jpg", max_image_num);
+
+		/* Copy image to /opt/usr/data/setting/wallpaper/ */
+		if ( system_setting_copy_extended_wallpaper(file_name_buffer, vconf_value)
+				!= SYSTEM_SETTINGS_ERROR_NONE ) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+		/* remove oldest wallpaper */
+		if( image_count >= WALLPAPER_MAX_COUNT )
+		{
+			if(system_setting_remove_oldest_extended_wallpaper()
+					!= SYSTEM_SETTINGS_ERROR_NONE ) {
+				remove(file_name_buffer);
+				return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+			}
+		}
+
+		if (system_setting_vconf_set_value_string(VCONFKEY_BGSET, file_name_buffer)){
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+		if (system_setting_vconf_set_value_int(VCONFKEY_SETAPPL_WALLPAPER_CHANGED_NOTI_INT,
+					VCONFKEY_WALLPAPER_CHANGED_NOTI_GEAR)) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+	} else {
+		if (system_setting_vconf_set_value_string(VCONFKEY_BGSET, vconf_value)) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+	}
+#endif
 
 	return SYSTEM_SETTINGS_ERROR_NONE;
 }
@@ -641,7 +842,6 @@ int system_setting_set_3g_data_network(system_settings_key_e key, system_setting
 	return SYSTEM_SETTINGS_ERROR_NONE;
 }
 
-#if SUPPORT_ACCESSIBILITY
 /*
 	"IDS_COM_POP_SHORT"		0.5
 	"IDS_ST_BODY_MEDIUM"	1.0
@@ -673,7 +873,6 @@ int system_setting_set_tap_and_hold_delay(system_settings_key_e key, system_sett
 	}
 	return SYSTEM_SETTINGS_ERROR_NONE;
 }
-#endif
 
 static int category_func(const char *name, void *user_data)
 {
@@ -815,7 +1014,7 @@ int system_setting_unset_changed_callback_3g_data_network(system_settings_key_e 
 {
 	return system_setting_vconf_unset_changed_cb(VCONFKEY_3G_ENABLE, 1);
 }
-#if SUPPORT_ACCESSIBILITY
+
 int system_setting_set_changed_callback_tap_and_hold_delay(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
 {
 	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_ACCESSIBILITY_TAP_HOLD_DELAY_STR, SYSTEM_SETTINGS_KEY_TAP_AND_HOLD_DELAY, 1,user_data);
@@ -825,10 +1024,10 @@ int system_setting_unset_changed_callback_tap_and_hold_delay(system_settings_key
 {
 	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_ACCESSIBILITY_TAP_HOLD_DELAY_STR, 1);
 }
-#endif
+
 int system_setting_set_changed_callback_lockscreen_app(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
 {
-	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_3RD_LOCK_PKG_NAME_STR, SYSTEM_SETTINGS_KEY_LOCKSCREEN_APP, 1,user_data);
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_3RD_LOCK_PKG_NAME_STR, SYSTEM_SETTINGS_KEY_TAP_AND_HOLD_DELAY, 1,user_data);
 }
 
 int system_setting_unset_changed_callback_lockscreen_app(system_settings_key_e key)
@@ -952,9 +1151,11 @@ int __is_available_font(char* font_name)
 
 	//setting_retvm_if(font_config == NULL, NULL, "Failed: FcInitLoadConfigAndFonts");
 
+	char *locale = setlocale(0, NULL);
+
 	pat = FcPatternCreate();
 
-	os = FcObjectSetBuild(FC_FAMILY, FC_FILE, (char *) 0);
+	os = FcObjectSetBuild(FC_FAMILY, FC_FILE, FC_FAMILYLANG, (char *) 0);
 
 	if (os) {
 		fs = FcFontList(font_config, pat, os);
@@ -981,15 +1182,43 @@ int __is_available_font(char* font_name)
 
 				if ( file && (!strncmp((const char*)file, SETTING_FONT_PRELOAD_FONT_PATH, preload_path_len)
 							|| !strncmp((const char*)file, SETTING_FONT_DOWNLOADED_FONT_PATH, download_path_len))) {
-					if (FcPatternGetString(fs->fonts[j], FC_FAMILY, 0, &family) != FcResultMatch) {
-						SETTING_TRACE("Family name is invalid");
-						continue;
+					char *family_result = NULL;
+					FcChar8 *lang = NULL;
+					int id = 0;
+					if (FcPatternGetString(fs->fonts[j], FC_FAMILY, id, &family) != FcResultMatch){
+						break;
+					}
+					if (FcPatternGetString(fs->fonts[j], FC_FAMILYLANG, id, &lang) != FcResultMatch){
+						break;
+					}
+					family_result = (char *)family;
+
+					// Find proper family name for current locale.
+					while (locale && family && lang) {
+						if (!strncmp(locale, (char *)lang, strlen((char *)lang))) {
+							family_result = (char *)family;
+							break;
+						}
+
+						// I will set english as default family language.
+						// If there is no proper family language for current locale,
+						// we have to show the english family name.
+						if (!strcmp(lang, "en")){
+							family_result = (char *)family;
+						}
+						id++;
+						if (FcPatternGetString(fs->fonts[j], FC_FAMILY, id, &family) != FcResultMatch){
+							break;
+						}
+						if (FcPatternGetString(fs->fonts[j], FC_FAMILYLANG, id, &lang) != FcResultMatch){
+							break;
+						}
 					}
 
-					if (family)
+					if (family_result)
 					{
-						SETTING_TRACE("-------- FONT - family = %s", (char *)family);
-						if (strcmp(family, font_name) == 0)
+						SETTING_TRACE("-------- FONT - family_result = %s", (char *)family_result);
+						if (strcmp(family_result, font_name) == 0)
 						{
 							ret = 1;
 							break;
@@ -1165,16 +1394,14 @@ static bool font_config_set(char *font_name)
         }
         elm_config_font_overlay_set(etc->name, (const char*)font_name, size);
     }
-
-    //elm_config_font_overlay_apply();
-    elm_config_all_flush();
-
-	EAPI Eina_Bool save_ok = EINA_FALSE;
-    save_ok = elm_config_save();
     elm_config_text_classes_list_free(text_classes);
     text_classes = NULL;
-	bool ok = (save_ok) ? true : false;
-	return save_ok;
+
+	// add new function
+	ea_theme_system_font_set(font_name, font_size);
+	ea_theme_system_fonts_apply();
+
+	return 1;
 }
 
 static void __font_size_set()
@@ -1196,10 +1423,11 @@ static void __font_size_set()
         elm_config_font_overlay_set(etc->name, font_name, font_size);
     }
 
-	elm_config_font_overlay_apply();
-    elm_config_all_flush();
-    elm_config_save();
     elm_config_text_classes_list_free(text_classes);
+
+	ea_theme_system_font_set(font_name, font_size);
+	ea_theme_system_fonts_apply();
+
     text_classes = NULL;
     g_free(font_name);
 }
@@ -1236,3 +1464,513 @@ static int __font_size_get()
     }
     return font_size;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//---------------------------------------
+int system_setting_get_locale_country(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	char* vconf_value = NULL;
+	if (system_setting_vconf_get_value_string(VCONFKEY_REGIONFORMAT, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	// parsing validation
+	// en_US.UTF-8
+	char arr[20];
+	snprintf(arr, 20, vconf_value);
+	arr[5] = '\0';
+	*value = strdup(arr);
+	free(vconf_value);
+	vconf_value = NULL;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_locale_country(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	char* vconf_value = NULL;
+	vconf_value = (char*)value;
+
+	char* ext = "UTF-8";
+
+	char arr[20];
+	snprintf(arr, 20, "%s.%s",vconf_value, ext);
+
+	if (system_setting_vconf_set_value_string(VCONFKEY_REGIONFORMAT, arr)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_locale_country(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_REGIONFORMAT, SYSTEM_SETTINGS_KEY_LOCALE_COUNTRY, 3, user_data );
+}
+
+int system_setting_unset_changed_callback_locale_country(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_REGIONFORMAT, 3);
+}
+
+
+//---------------------------------------
+int system_setting_get_locale_language(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	char* vconf_value = NULL;
+	if (system_setting_vconf_get_value_string(VCONFKEY_LANGSET, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	// parsing validation
+	// en_US.UTF-8
+	char arr[20];
+	snprintf(arr, 20, vconf_value);
+	arr[5] = '\0';
+	*value = strdup(arr);
+	free(vconf_value);
+	vconf_value = NULL;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_locale_language(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	char* vconf_value = NULL;
+	vconf_value = (char*)value;
+
+	char* ext = "UTF-8";
+
+	char arr[20];
+	snprintf(arr, 20, "%s.%s",vconf_value, ext);
+
+	if (system_setting_vconf_set_value_string(VCONFKEY_LANGSET, arr)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_locale_language(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	//return system_setting_vconf_set_changed_cb(VCONFKEY_LANGSET, SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE, 3, user_data );
+	return system_setting_vconf_set_changed_cb(VCONFKEY_LANGSET, SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE, 100, user_data );
+}
+
+int system_setting_unset_changed_callback_locale_language(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_LANGSET, 100);
+}
+
+//---------------------------------------
+int system_setting_get_locale_timeformat_24hour(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	int vconf_value;
+
+	if (system_setting_vconf_get_value_int(VCONFKEY_REGIONFORMAT_TIME1224, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	bool ret_value;
+	if (vconf_value == VCONFKEY_TIME_FORMAT_12)
+		ret_value = false;
+	else if (vconf_value == VCONFKEY_TIME_FORMAT_24)
+		ret_value = true;
+
+	*value = (void*)ret_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_locale_timeformat_24hour(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	bool* vconf_value;
+
+	vconf_value = (bool*)value;
+
+	if (vconf_value)
+	{
+		if (system_setting_vconf_set_value_int(VCONFKEY_REGIONFORMAT_TIME1224, VCONFKEY_TIME_FORMAT_24)) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+	} else {
+		if (system_setting_vconf_set_value_int(VCONFKEY_REGIONFORMAT_TIME1224, VCONFKEY_TIME_FORMAT_12)) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_locale_timeformat_24hour(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_REGIONFORMAT_TIME1224, SYSTEM_SETTINGS_KEY_LOCALE_TIMEFORMAT_24HOUR, 3, user_data );
+}
+
+int system_setting_unset_changed_callback_locale_timeformat_24hour(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_REGIONFORMAT_TIME1224, 3);
+}
+
+int system_setting_get_locale_timezone(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	char tzpath[256];
+	ssize_t len = readlink(SETTING_TZONE_SYMLINK_PATH, tzpath, sizeof(tzpath)-1);
+	if (len != -1) {
+		tzpath[len] = '\0';
+	} else {
+		SETTING_TRACE("parse error for SETTING_TZONE_SYMLINK_PATH");
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+// "/usr/share/zoneinfo/Asia/Seoul"
+	SETTING_TRACE("tzpath : %s ", &tzpath[20]);
+	*value = strdup(&tzpath[20]);
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_locale_timezone_changed(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
+}
+
+int system_setting_unset_changed_callback_locale_timezone_changed(system_settings_key_e key)
+{
+	return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
+}
+
+
+int system_setting_get_time_changed(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	time_t cur_tick;
+	cur_tick = time(NULL);
+	*value = (void*)cur_tick;
+	// struct tm * localtime = time (cur_tick);
+	// printf("%s\n", ctime(&cur_tick);
+	return SYSTEM_SETTINGS_ERROR_NONE;
+
+}
+
+int system_setting_set_changed_callback_time_changed(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SYSTEM_TIME_CHANGED, SYSTEM_SETTINGS_KEY_TIME_CHANGED, 3, user_data );
+}
+
+int system_setting_unset_changed_callback_time_changed(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SYSTEM_TIME_CHANGED, 3);
+}
+
+
+
+// SYSTEM_SETTINGS_KEY_SOUND_LOCK
+int system_setting_get_sound_lock(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	bool vconf_value;
+
+	if (system_setting_vconf_get_value_bool(VCONFKEY_SETAPPL_SOUND_LOCK_BOOL, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_sound_lock(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_SOUND_LOCK_BOOL, SYSTEM_SETTINGS_KEY_SOUND_LOCK, 3, user_data );
+}
+
+int system_setting_unset_changed_callback_sound_lock(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_SOUND_LOCK_BOOL, 3);
+}
+
+/**
+ * a = VCONFKEY_SETAPPL_SOUND_STATUS_BOOL b = VCONFKEY_SETAPPL_VIBRATION_STATUS_BOOL
+ *
+ * a == false, b == false --> silent mode
+ * a == true, b == false --> sound mode
+ * a == false, b == true --> vibration mode
+ */
+int system_setting_get_sound_silent_mode(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	bool sound_cond;
+	bool vib_cond;
+
+	bool vconf_value;
+	if (system_setting_vconf_get_value_bool(VCONFKEY_SETAPPL_SOUND_STATUS_BOOL, &sound_cond)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	if (system_setting_vconf_get_value_bool(VCONFKEY_SETAPPL_VIBRATION_STATUS_BOOL, &vib_cond)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	if (sound_cond == false && vib_cond == false)
+	{
+		vconf_value = true;
+		*value = (void*)vconf_value;
+	} else {
+		vconf_value = false;
+		*value = (void*)vconf_value;
+	}
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+// TODO
+int system_setting_set_changed_callback_sound_silent_mode(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_SOUND_STATUS_BOOL, SYSTEM_SETTINGS_KEY_SOUND_SILENT_MODE, 3, user_data );
+}
+
+// TODO
+int system_setting_unset_changed_callback_sound_silent_mode(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_SOUND_STATUS_BOOL, 3);
+}
+
+// SYSTEM_SETTINGS_KEY_SOUND_TOUCH
+int system_setting_get_sound_touch(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	bool vconf_value;
+
+	if (system_setting_vconf_get_value_bool(VCONFKEY_SETAPPL_TOUCH_SOUNDS_BOOL, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+}
+
+int system_setting_set_changed_callback_sound_touch(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_TOUCH_SOUNDS_BOOL, SYSTEM_SETTINGS_KEY_SOUND_TOUCH, 2, user_data );
+}
+
+int system_setting_unset_changed_callback_sound_touch(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_TOUCH_SOUNDS_BOOL, 2);
+}
+
+int system_setting_get_auto_rotation_mode(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	int vconf_value;
+
+	if (system_setting_vconf_get_value_bool(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_auto_rotation_mode(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	bool* vconf_value;
+	vconf_value = (bool*)value;
+	if (system_setting_vconf_set_value_bool(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL, *vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_auto_rotation_mode(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL, SYSTEM_SETTINGS_KEY_DISPLAY_SCREEN_ROTATION_AUTO, 2, user_data );
+}
+
+int system_setting_unset_changed_callback_auto_rotation_mode(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL, 2);
+}
+
+int system_setting_get_screen_backlight_time(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	int vconf_value;
+
+	if (system_setting_vconf_get_value_int(VCONFKEY_SETAPPL_LCD_TIMEOUT_NORMAL, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+
+int system_setting_set_screen_backlight_time(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	SETTING_TRACE_BEGIN;
+	int* vconf_value;
+	vconf_value = (int*)value;
+
+	if (system_setting_vconf_set_value_int(VCONFKEY_SETAPPL_LCD_TIMEOUT_NORMAL, *vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	SETTING_TRACE_END;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_screen_backlight_time(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_LCD_TIMEOUT_NORMAL, SYSTEM_SETTINGS_KEY_DISPLAY_SCREEN_ROTATION_AUTO, 2, user_data );
+}
+
+int system_setting_unset_changed_callback_screen_backlight_time(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_LCD_TIMEOUT_NORMAL, 2);
+}
+
+int system_setting_get_sound_notification(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	char* vconf_value = NULL;
+	if (system_setting_vconf_get_value_string(VCONFKEY_SETAPPL_NOTI_MSG_RINGTONE_PATH_STR, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	*value = vconf_value;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_sound_notification(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	char* vconf_value = NULL;
+	vconf_value = (char*)value;
+
+	int is_load = _is_file_accessible(vconf_value);
+	if (is_load == 0)
+	{
+		if (system_setting_vconf_set_value_string(VCONFKEY_SETAPPL_NOTI_MSG_RINGTONE_PATH_STR, vconf_value)) {
+			return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+		}
+	} else {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_sound_notification(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_NOTI_MSG_RINGTONE_PATH_STR, SYSTEM_SETTINGS_KEY_INCOMING_CALL_RINGTONE, 0, user_data );
+}
+
+int system_setting_unset_changed_callback_sound_notification(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_NOTI_MSG_RINGTONE_PATH_STR, 0);
+}
+
+int system_setting_get_notification_repetition_period(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	int vconf_value;
+
+	if (system_setting_vconf_get_value_int(VCONFKEY_SETAPPL_NOTI_MSG_ALERT_REP_TYPE_INT, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_notification_repetition_period(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	SETTING_TRACE_BEGIN;
+	int* vconf_value;
+	vconf_value = (int*)value;
+
+	if (system_setting_vconf_set_value_int(VCONFKEY_SETAPPL_NOTI_MSG_ALERT_REP_TYPE_INT, *vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	SETTING_TRACE_END;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_notification_repetition_period(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_NOTI_MSG_ALERT_REP_TYPE_INT, SYSTEM_SETTINGS_KEY_DISPLAY_SCREEN_ROTATION_AUTO, 1, user_data );
+}
+
+int system_setting_unset_changed_callback_notification_repetition_period(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_NOTI_MSG_ALERT_REP_TYPE_INT, 1);
+}
+
+int system_setting_get_device_name(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	char* vconf_value = NULL;
+	if (system_setting_vconf_get_value_string(VCONFKEY_SETAPPL_DEVICE_NAME_STR, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	*value = vconf_value;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_device_name(system_settings_key_e key, system_setting_data_type_e data_type, void* value)
+{
+	char* vconf_value = NULL;
+	vconf_value = (char*)value;
+
+	if (system_setting_vconf_set_value_string(VCONFKEY_SETAPPL_DEVICE_NAME_STR, vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_device_name(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_SETAPPL_DEVICE_NAME_STR, SYSTEM_SETTINGS_KEY_DEVICE_NAME, 0, user_data );
+}
+
+int system_setting_unset_changed_callback_device_name(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_SETAPPL_DEVICE_NAME_STR, 0);
+}
+
+//----------------------------------------------
+int system_setting_get_network_flight_mode(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	bool vconf_value;
+	if (system_setting_vconf_get_value_bool(VCONFKEY_TELEPHONY_FLIGHT_MODE, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	*value = (void*)vconf_value;
+
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_network_flight_mode(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_TELEPHONY_FLIGHT_MODE, SYSTEM_SETTINGS_KEY_NETWORK_FLIGHT_MODE, 3, user_data );
+}
+
+int system_setting_unset_changed_callback_network_flight_mode(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_TELEPHONY_FLIGHT_MODE, 3);
+}
+
+int system_setting_get_network_wifi_notification(system_settings_key_e key, system_setting_data_type_e data_type, void** value)
+{
+	int vconf_value;
+	if (system_setting_vconf_get_value_int(VCONFKEY_WIFI_ENABLE_QS, &vconf_value)) {
+		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
+	}
+	bool bret ;
+    bret = (vconf_value == VCONFKEY_WIFI_QS_ENABLE) ? true : false;
+
+	*value = (void*)bret;
+	return SYSTEM_SETTINGS_ERROR_NONE;
+}
+
+int system_setting_set_changed_callback_network_wifi_notification(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
+{
+	return system_setting_vconf_set_changed_cb(VCONFKEY_WIFI_ENABLE_QS, SYSTEM_SETTINGS_KEY_NETWORK_WIFI_NOTIFICATION, 4, user_data );
+}
+
+int system_setting_unset_changed_callback_network_wifi_notification(system_settings_key_e key)
+{
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_WIFI_ENABLE_QS, 4);
+}
+
+
+

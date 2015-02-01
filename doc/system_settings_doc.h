@@ -16,12 +16,18 @@
 
 
 /**
-* @defgroup CAPI_SYSTEM_SYSTEM_SETTINGS_MODULE System Settings
-* @brief system-settings provide APIs for sharing configuration over system
-* #system_settings_key_e shows all of the supporting APIs in system-settings.
 * @ingroup CAPI_SYSTEM_FRAMEWORK
+* @defgroup CAPI_SYSTEM_SYSTEM_SETTINGS_MODULE System Settings
+* @brief The @ref CAPI_SYSTEM_SYSTEM_SETTINGS_MODULE API provides APIs for sharing configuration over a system.
+* #system_settings_key_e shows all of the supporting APIs in System-Settings.
 *
 * @section CAPI_SYSTEM_SYSTEM_SETTINGS_MODULE_REQUIRED_HEADER Required Header
 *	\#include <system_settings.h>
 *
+* @section CAPI_SYSTEM_SYSTEM_SETTINGS_MODULE_OVERVIEW Overview
+*
+* System Settings API provides functions for getting the system configuration related to user preferences.
+* The main features of the System Settings API include accessing system-wide configurations, such as ringtones, wallpapers, and etc.
+*
+* For more information on feature, see <a href="../org.tizen.mobile.native.appprogramming/html/guide/system/system_settings.htm">System Settings Programming Guide.</a>
 */

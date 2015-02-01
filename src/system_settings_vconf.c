@@ -182,6 +182,27 @@ static void system_setting_vconf_event_cb4(keynode_t *node, void *event_data)
     }
 }
 
+static void system_setting_vconf_event_cb100(keynode_t *node, void *event_data)
+{
+	system_settings_key_e pkey = (system_settings_key_e)event_data;
+
+    if (node != NULL)
+    {
+		system_setting_h system_setting_item;
+
+		if (system_settings_get_item(pkey, &system_setting_item))
+		{
+			LOGE("[%s] INVALID_PARAMETER(0x%08x) : invalid key", __FUNCTION__, SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER);
+		}
+
+		void* user_data = NULL;
+		user_data = system_setting_item->user_data;
+		system_setting_item->changed_cb(pkey, user_data);
+    }
+}
+
+
+
 
 static system_setting_vconf_event_cb system_setting_vconf_get_event_cb_slot(int slot)
 {

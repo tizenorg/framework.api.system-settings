@@ -17,6 +17,13 @@
 #include <system_settings.h>
 #include <system_settings_private.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 static void _quit_cb(void *data, Evas_Object* obj, void* event_info)
 {
     Evas_Object *win = (Evas_Object *) data;
@@ -262,6 +269,31 @@ void system_settings_changed_motion_activation(system_settings_key_e key, void *
 	SETTING_TRACE(">>>>>>>> system_settings_changed_motion_activation key = %d ", key);
 	SETTING_TRACE("---------------------------------CALLED BY USER APPLICATION-MOTION ACTIVIATION ");
 }
+
+void system_settings_changed_time(system_settings_key_e key, void *user_data)
+{
+       SETTING_TRACE(">>>>>>>> notify change time ");
+       int ret;
+       char *timezone = NULL;
+       ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_LOCALE_TIMEZONE, &timezone);
+       SETTING_TRACE(" timezone : (%s) ", timezone );
+       //SETTING_TRACE("---------------------------------CALLED BY USER APPLICATION-MOTION ACTIVIATION ");
+}
+
+void list_item_touch_handler7_1(void* data, Evas_Object* obj, void* event_info)
+{
+	char* path = NULL;
+	int ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_WALLPAPER_HOME_SCREEN, &path);
+	SETTING_TRACE(">>>>>>>> home screen - error case :: %d ------ %s ", ret, path);
+}
+
+void list_item_touch_handler8_1(void* data, Evas_Object* obj, void* event_info)
+{
+	char* path = NULL;
+	int ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_WALLPAPER_LOCK_SCREEN, &path);
+	SETTING_TRACE(">>>>>>>> home screen - error case :: %d ------ %s ", ret, path);
+}
+
 void list_item_touch_handler7(void* data, Evas_Object* obj, void* event_info)
 {
 	char* path = "/opt/usr/media/Images/image16.jpg";
@@ -397,7 +429,36 @@ void list_item_touch_handler22(void* data, Evas_Object* obj, void* event_info)
 
 }
 
-#if SUPPORT_ACCESSIBILITY
+// get notification sound
+void list_item_touch_handler15_1(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get notification ringtone path ");
+	char *ringtonepath = NULL;
+	int ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_SOUND_NOTIFICATION, &ringtonepath);
+	SETTING_TRACE("current notification ringtone path : (%s) ", ringtonepath);
+
+}
+
+void list_item_touch_handler15_2(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get notification ringtone path - exception case ");
+	int ret;
+	char *ringtonepath = NULL;
+	//opt/share/settings/ringtones/ringtone_sdk.mp3
+	ret = system_settings_set_value_string(SYSTEM_SETTINGS_KEY_SOUND_NOTIFICATION, "/opt/share/settings/Ringtones/ringtone_sdk.mp3");
+	ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_SOUND_NOTIFICATION, &ringtonepath);
+	SETTING_TRACE(" 1 current ringtone path : (%s) ", ringtonepath);
+	// set the key to the wrong value
+	ret = system_settings_set_value_string(SYSTEM_SETTINGS_KEY_SOUND_NOTIFICATION, "aaa.wav");
+	SETTING_TRACE(" wrong path name of notification ringtone path : (%s) ", "aaa.wav");
+
+	SETTING_TRACE(" 1 current ringtone path return = %d ", ret);
+
+	ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_SOUND_NOTIFICATION, &ringtonepath);
+	SETTING_TRACE("2 current ringtone path : (%s) -- return : %d ", ringtonepath, ret);
+
+}
+
 void list_item_touch_handler23(void* data, Evas_Object* obj, void* event_info)
 {
 	SETTING_TRACE(">>>>>>>> GET tap and hold delay ");
@@ -406,6 +467,7 @@ void list_item_touch_handler23(void* data, Evas_Object* obj, void* event_info)
 	ret = system_settings_get_value_int(SYSTEM_SETTINGS_KEY_TAP_AND_HOLD_DELAY, &delay);
 	SETTING_TRACE(" tap and delay = %d ", delay);
 }
+
 void list_item_touch_handler24(void* data, Evas_Object* obj, void* event_info)
 {
 	SETTING_TRACE(">>>>>>>> SET tap and hold delay ");
@@ -426,7 +488,7 @@ void list_item_touch_handler24(void* data, Evas_Object* obj, void* event_info)
 	SETTING_TRACE(" tap and delay = %d ", delay);
 
 }
-#endif
+
 void list_item_touch_handler25(void* data, Evas_Object* obj, void* event_info)
 {
 	SETTING_TRACE(">>>>>>>> Lock screen extension Test ");
@@ -447,6 +509,220 @@ void list_item_touch_handler26(void* data, Evas_Object* obj, void* event_info)
 		SETTING_TRACE(" %s ----------------  ", ret_font);
 	}
 }
+
+//"get locale language "
+void list_item_touch_handler27(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get locale language ");
+	int ret;
+	char *language = NULL;
+	ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE, &language);
+	SETTING_TRACE(" lnaguage : (%s) ", language);
+}
+
+// "get locale country "
+void list_item_touch_handler28(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get locale country ");
+	int ret;
+	char *country = NULL;
+	ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_LOCALE_COUNTRY, &country);
+	SETTING_TRACE(" country : (%s) ", country);
+
+}
+
+//"get locale language "
+void list_item_touch_handler30(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> set locale language ");
+	int ret;
+	char *language = NULL;
+	ret = system_settings_set_value_string(SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE, "en_GB");
+	SETTING_TRACE(">>>>>>>> set locale language - DONE ");
+}
+
+// "get locale country "
+void list_item_touch_handler31(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> set locale country ");
+	int ret;
+	char *country = NULL;
+	ret = system_settings_set_value_string(SYSTEM_SETTINGS_KEY_LOCALE_COUNTRY, "en_GB");
+	SETTING_TRACE(">>>>>>>> set locale country - DONE ");
+}
+
+// "get locale formformat 1224 "
+void list_item_touch_handler29(void* data, Evas_Object* obj, void* event_info)
+{
+	bool is_24hour = false;;
+	int errorcode = system_settings_get_value_bool(SYSTEM_SETTINGS_KEY_LOCALE_TIMEFORMAT_24HOUR, &is_24hour);
+	SETTING_TRACE(">>>>>>>> get locale formformat 1224 -- %d - errorcode : %d", is_24hour, errorcode);
+}
+
+// "get timezone "
+void list_item_touch_handler32(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get timezone ");
+	int ret;
+	char *timezone = NULL;
+	ret = system_settings_get_value_string(SYSTEM_SETTINGS_KEY_LOCALE_TIMEZONE, &timezone);
+	SETTING_TRACE(" timezone : (%s) ", timezone );
+}
+
+// "get flight mode "
+void list_item_touch_handler33(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE(">>>>>>>> get flight mode");
+	int ret;
+	bool mode;
+	ret = system_settings_get_value_bool(SYSTEM_SETTINGS_KEY_NETWORK_FLIGHT_MODE, &mode);
+	SETTING_TRACE(" flight mode : (%d) ", mode );
+}
+
+static void system_settings_changed_locale(system_settings_key_e key, void *user_data)
+{
+	struct appdata* ad = (struct appdata*)user_data;
+	SETTING_TRACE(" font size -- %s ", ad->pkgname);
+	SETTING_TRACE(">>>>>>>> system_settings_changed_locale key = %d ", key);
+	SETTING_TRACE("---------------------------------CALLED BY USER APPLICATION -locale ");
+}
+
+static void system_settings_changed_locale_country(system_settings_key_e key, void *user_data)
+{
+	struct appdata* ad = (struct appdata*)user_data;
+	SETTING_TRACE(" font size -- %s ", ad->pkgname);
+	SETTING_TRACE(">>>>>>>> system_settings_changed_locale key = %d ", key);
+	SETTING_TRACE("---------------------------------CALLED BY USER APPLICATION -locale ");
+}
+
+
+void list_item_touch_handler34(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE("start");
+	int ret = 0;
+
+	int test_key = SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE;
+
+	ret = system_settings_set_changed_cb(test_key, system_settings_changed_locale, NULL);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR :%d ", ret);
+	}
+
+	sleep(3);
+
+	ret = system_settings_unset_changed_cb(test_key);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_LOCALE_LANGUAGE) = %d, . ", ret);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_IO_ERROR) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_IO_ERROR");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR :%d ", ret);
+	}
+
+	sleep(3);
+
+	ret = system_settings_set_changed_cb(test_key, system_settings_changed_locale, NULL);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_IO_ERROR) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_IO_ERROR");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR : %d", ret);
+	}
+	SETTING_TRACE("end");
+}
+
+void list_item_touch_handler37(void* data, Evas_Object* obj, void* event_info)
+{
+	SETTING_TRACE("start");
+	int ret = 0;
+
+	int test_key = SYSTEM_SETTINGS_KEY_LOCALE_COUNTRY;
+
+	ret = system_settings_set_changed_cb(test_key, system_settings_changed_locale_country, NULL);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR :%d ", ret);
+	}
+
+	sleep(3);
+
+	ret = system_settings_unset_changed_cb(test_key);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_LOCALE_COUNTRY) = %d, . ", ret);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_IO_ERROR) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_IO_ERROR");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR :%d ", ret);
+	}
+
+	sleep(3);
+
+	ret = system_settings_set_changed_cb(test_key, system_settings_changed_locale_country, NULL);
+	if(ret == SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_PERMISSION_DENIED) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_NONE) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_NONE");
+	} else if (ret == SYSTEM_SETTINGS_ERROR_IO_ERROR) {
+		SETTING_TRACE("SYSTEM_SETTINGS_ERROR_IO_ERROR");
+	} else {
+		SETTING_TRACE("UNKNOW_ERROR : %d", ret);
+	}
+	SETTING_TRACE("end");
+}
+
+void list_item_touch_handler35(void* data, Evas_Object* obj, void* event_info)
+{
+	bool flag = false;;
+    int ret = system_settings_get_value_bool(SYSTEM_SETTINGS_KEY_SOUND_LOCK, &flag);
+	if (ret == SYSTEM_SETTINGS_ERROR_NONE )
+	{
+		SETTING_TRACE(" %d ---------------- ret: %d  ", flag, ret);
+	} else {
+		SETTING_TRACE(" %d ---------------- ret: %d  ", flag, ret);
+	}
+}
+
+void list_item_touch_handler36(void* data, Evas_Object* obj, void* event_info)
+{
+	bool flag = false;;
+    int ret = system_settings_get_value_bool(SYSTEM_SETTINGS_KEY_SOUND_TOUCH, &flag);
+	if (ret == SYSTEM_SETTINGS_ERROR_NONE )
+	{
+		SETTING_TRACE(" %d ---------------- ret: %d  ", flag, ret);
+	} else {
+		SETTING_TRACE(" %d ---------------- ret: %d  ", flag, ret);
+	}
+}
+
+
 static Evas_Object* _create_list_winset(Evas_Object* parent, struct appdata* ad)
 {
 	Evas_Object *li;
@@ -470,6 +746,14 @@ static Evas_Object* _create_list_winset(Evas_Object* parent, struct appdata* ad)
 			SETTING_TRACE("SYSTEM_SETTINGS_KEY_MOTION_ACTIVATION returns positive values = %d, means successful return. ", ret);
 	}
 
+	// callback registration
+	ret = system_settings_set_changed_cb(SYSTEM_SETTINGS_KEY_TIME_CHANGED, system_settings_changed_time, ad);
+	if (ret < 0) {
+		SETTING_TRACE("SYSTEM_SETTINGS_KEY_TIME_CHANGED returns negative values = %d ", ret);
+	} else {
+		SETTING_TRACE("SYSTEM_SETTINGS_KEY_TIME_CHANGED returns positive values = %d, means successful return. ", ret);
+	}
+
 	li = elm_list_add(parent);
 	elm_list_mode_set(li, ELM_LIST_COMPRESS);
 
@@ -484,7 +768,9 @@ static Evas_Object* _create_list_winset(Evas_Object* parent, struct appdata* ad)
 	elm_list_item_append( li, "font type - choose Choco cooky ", NULL, NULL, list_item_touch_handler20, ad);
 	elm_list_item_append( li, "motion activation ON ", NULL, NULL, list_item_touch_handler5, ad);
 	elm_list_item_append( li, "motion activation OFF ", NULL, NULL, list_item_touch_handler6, ad);
+	elm_list_item_append( li, "homescreen - get ", NULL, NULL, list_item_touch_handler7_1, ad);
 	elm_list_item_append( li, "homescreen - set ", NULL, NULL, list_item_touch_handler7, ad);
+	elm_list_item_append( li, "lockscreen - get ", NULL, NULL, list_item_touch_handler8_1, ad);
 	elm_list_item_append( li, "lockscreen - set ", NULL, NULL, list_item_touch_handler8, ad);
 
 	elm_list_item_append( li, "3g data network GET ", NULL, NULL, list_item_touch_handler9, ad);
@@ -500,12 +786,31 @@ static Evas_Object* _create_list_winset(Evas_Object* parent, struct appdata* ad)
 
 	elm_list_item_append( li, "get email ringtone ", NULL, NULL, list_item_touch_handler21, ad);
 	elm_list_item_append( li, "get email ringtone - exception ", NULL, NULL, list_item_touch_handler22, ad);
-#if SUPPORT_ACCESSIBILITY
+
+	elm_list_item_append( li, "get notification ringtone ", NULL, NULL, list_item_touch_handler15_1, ad);
+	elm_list_item_append( li, "get notification ringtone - exception ", NULL, NULL, list_item_touch_handler15_2, ad);
+
 	elm_list_item_append( li, "get - tap and hold delay ", NULL, NULL, list_item_touch_handler23, ad);
 	elm_list_item_append( li, "set - tap and hold delay ", NULL, NULL, list_item_touch_handler24, ad);
-#endif
+
 	elm_list_item_append( li, "lockscreen - extention test ", NULL, NULL, list_item_touch_handler25, ad);
 	elm_list_item_append( li, "get default font ", NULL, NULL, list_item_touch_handler26, ad);
+
+	elm_list_item_append( li, "get locale language ", NULL, NULL, list_item_touch_handler27, ad);
+	elm_list_item_append( li, "get locale country ", NULL, NULL, list_item_touch_handler28, ad);
+
+	elm_list_item_append( li, "get locale formformat 1224 ", NULL, NULL, list_item_touch_handler29, ad);
+
+	elm_list_item_append( li, "set locale language ", NULL, NULL, list_item_touch_handler30, ad);
+	elm_list_item_append( li, "set locale country ", NULL, NULL, list_item_touch_handler31, ad);
+
+
+	elm_list_item_append( li, "Get Timezone ", NULL, NULL, list_item_touch_handler32, ad);
+	elm_list_item_append( li, "Get Flight mode ", NULL, NULL, list_item_touch_handler33, ad);
+	elm_list_item_append( li, "cb TEST ", NULL, NULL, list_item_touch_handler34, ad);
+	elm_list_item_append( li, "SYSTEM_SETTINGS_KEY_SOUND_LOCK - get test ", NULL, NULL, list_item_touch_handler35, ad);
+	elm_list_item_append( li, "SYSTEM_SETTINGS_KEY_SOUND_TOUCH - get test ", NULL, NULL, list_item_touch_handler36, ad);
+	elm_list_item_append( li, "cb TEST - locale_language ", NULL, NULL, list_item_touch_handler37, ad);
 	elm_list_go(li);
 	return li;
 }
@@ -606,8 +911,17 @@ int app_terminate(void *data)
 	int ret;
 	// unregistration
 	ret = system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_FONT_SIZE);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_FONT_SIZE) = %d, . ", ret);
+
 	ret = system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_FONT_TYPE);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_FONT_TYPE) = %d, . ", ret);
+
 	ret = system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_MOTION_ACTIVATION);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_MOTION_ACTIVATION) = %d, . ", ret);
+
+	ret = system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_TIME_CHANGED);
+	SETTING_TRACE("system_settings_unset_changed_cb(SYSTEM_SETTINGS_KEY_TIME_CHANGED) = %d, . ", ret);
+
 	return 0;
 }
 
