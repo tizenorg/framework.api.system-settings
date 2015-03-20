@@ -1,3 +1,16 @@
+capi-system-system-settings (0.0.1-7ubuntu1) precise; urgency=low
+
+  * release 
+  * font-type API refinement
+
+ -- mjpark <mjpark@localhost>  Wed, 23 Jan 2013 15:25:21 +0900
+
+capi-system-system-settings (0.0.1-7) unstable; urgency=low
+
+  * release
+
+ -- MyoungJune Park <mj2004.park@samsung.com>  Tue, 04 Sep 2012 10:34:54 +0900
+
 capi-system-system-settings (0.0.1-6) unstable; urgency=low
 
   * tizen build

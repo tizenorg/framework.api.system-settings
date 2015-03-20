@@ -1,7 +1,7 @@
 Name:       capi-system-system-settings
 Summary:    A System Settings library in Tizen Native API
-Version:    0.0.1
-Release:    1
+Version:    0.0.2
+Release:    3
 Group:      TO_BE/FILLED_IN
 License:    TO BE FILLED IN
 Source0:    %{name}-%{version}.tar.gz
@@ -19,6 +19,9 @@ BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gobject-2.0)
 BuildRequires:  pkgconfig(fontconfig)
 BuildRequires:  pkgconfig(libxml-2.0)
+BuildRequires:  pkgconfig(pkgmgr)
+BuildRequires:  pkgconfig(pkgmgr-info)
+BuildRequires:  pkgconfig(efl-assist)
 
 Requires(post): /sbin/ldconfig  
 Requires(postun): /sbin/ldconfig
@@ -39,8 +42,32 @@ Requires:  pkgconfig(capi-base-common)
 %prep
 %setup -q
 
+%define tizen_profile_name mobile 
 
 %build
+
+%if "%{?tizen_profile_name}" == "wearable"
+export CFLAGS="$CFLAGS -DTIZEN_WEARABLE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_WEARABLE"
+export FFLAGS="$FFLAGS -DTIZEN_WEARABLE"
+%else
+export CFLAGS="$CFLAGS -DTIZEN_MOBILE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_MOBILE"
+export FFLAGS="$FFLAGS -DTIZEN_MOBILE"
+%endif
+
+%if 0%{?sec_build_binary_debug_enable}
+export CFLAGS="$CFLAGS -DTIZEN_DEBUG_ENABLE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
+export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
+%endif
+
+%if 0%{?tizen_build_binary_release_type_eng}
+export CFLAGS="$CFLAGS -DTIZEN_ENGINEER_MODE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_ENGINEER_MODE"
+export FFLAGS="$FFLAGS -DTIZEN_ENGINEER_MODE"
+%endif
+
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`  
 cmake . -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER} 
 
@@ -57,11 +84,13 @@ rm -rf %{buildroot}
 
 
 %files
+%manifest %{name}.manifest
 %{_libdir}/lib*.so.*
 # /usr/local/bin/test_system_settings
 /usr/local/bin/test_system_settings_gui
 
 %files devel
+%manifest %{name}.manifest
 %{_includedir}/system/*.h
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/lib*.so

@@ -35,6 +35,8 @@ struct appdata
 
 	Evas_Coord root_w;
 	Evas_Coord root_h;
+
+	char* pkgname;
 };
 
 
