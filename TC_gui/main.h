@@ -24,9 +24,8 @@
 
 #define PACKAGE "com.samsung.appcore-mini"
 
-struct appdata
-{
-	Evas* evas;
+struct appdata {
+	Evas *evas;
 	Evas_Object *win_main;
 	Evas_Object *bg;
 	Evas_Object *layout_main;
@@ -35,28 +34,30 @@ struct appdata
 
 	Evas_Coord root_w;
 	Evas_Coord root_h;
+
+	char *pkgname;
 };
 
 
-// appcore & EFL initialization code
-static void _quit_cb(void *data, Evas_Object* obj, void* event_info);
-static Evas_Object* _create_list_winset(Evas_Object* parent, struct appdata* ad);
+/* appcore & EFL initialization code */
+static void _quit_cb(void *data, Evas_Object *obj, void *event_info);
+static Evas_Object *_create_list_winset(Evas_Object *parent, struct appdata *ad);
 
 /**
  * return a pointer, calling elm_win_add(); -> win_main
  */
-static Evas_Object* create_win(const char *name);
-static void _window_resize_cb(void *data, Evas * e, Evas_Object * obj, void *event_info);
+static Evas_Object *create_win(const char *name);
+static void _window_resize_cb(void *data, Evas *e, Evas_Object *obj, void *event_info);
 
 /**
  * return a pointer, calling elm_bg_add(); -> bg
  */
-static Evas_Object* _create_bg(Evas_Object *parent);
+static Evas_Object *_create_bg(Evas_Object *parent);
 
 /**
  * return a pointer, calling elm_layout_add( win_main ) -> layout_main
  */
-static Evas_Object* _create_layout_main(Evas_Object* parent);
+static Evas_Object *_create_layout_main(Evas_Object *parent);
 
 
 #endif /* __APPCORE_MINI_ */
