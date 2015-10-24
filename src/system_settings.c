@@ -94,18 +94,6 @@ system_setting_s system_setting_table[] = {
 		NULL		/* user data */
 	},
 
-#ifdef TIZEN_WEARABLE
-	{
-		SYSTEM_SETTINGS_KEY_MOTION_ACTIVATION,
-		SYSTEM_SETTING_DATA_TYPE_BOOL,
-		system_setting_get_not_supported_now,
-		system_setting_set_not_supported_now,
-		system_setting_set_changed_callback_not_supported_now,
-		system_setting_unset_changed_callback_not_supported_now,
-		NULL,
-		NULL		/* user data */
-	},
-#else
 	{
 		SYSTEM_SETTINGS_KEY_MOTION_ACTIVATION,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
@@ -116,7 +104,6 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-#endif
 
 	{
 		SYSTEM_SETTINGS_KEY_EMAIL_ALERT_RINGTONE,
@@ -145,16 +132,6 @@ system_setting_s system_setting_table[] = {
 		system_setting_set_3g_data_network,
 		system_setting_set_changed_callback_3g_data_network,
 		system_setting_unset_changed_callback_3g_data_network,
-		NULL,
-		NULL		/* user data */
-	},
-	{
-		SYSTEM_SETTINGS_KEY_TAP_AND_HOLD_DELAY,
-		SYSTEM_SETTING_DATA_TYPE_INT,
-		system_setting_get_tap_and_hold_delay,
-		system_setting_set_tap_and_hold_delay,
-		system_setting_set_changed_callback_tap_and_hold_delay,
-		system_setting_unset_changed_callback_tap_and_hold_delay,
 		NULL,
 		NULL		/* user data */
 	},
@@ -238,19 +215,6 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-
-#ifdef TIZEN_WEARABLE
-	{
-		SYSTEM_SETTINGS_KEY_SOUND_SILENT_MODE,
-		SYSTEM_SETTING_DATA_TYPE_BOOL,
-		system_setting_get_not_supported_now,
-		system_setting_set_not_supported_now,
-		system_setting_set_changed_callback_not_supported_now,
-		system_setting_unset_changed_callback_not_supported_now,
-		NULL,
-		NULL		/* user data */
-	},
-#else
 	{
 		SYSTEM_SETTINGS_KEY_SOUND_SILENT_MODE,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
@@ -261,7 +225,6 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-#endif
 	{
 		SYSTEM_SETTINGS_KEY_SOUND_TOUCH,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
@@ -322,18 +285,16 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-#ifdef TIZEN_WEARABLE
 	{
-		SYSTEM_SETTINGS_KEY_NETWORK_FLIGHT_MODE,
+		SYSTEM_SETTINGS_KEY_MOTION_ENABLED,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
-		system_setting_get_not_supported_now,
-		system_setting_set_not_supported_now,
-		system_setting_set_changed_callback_not_supported_now,
-		system_setting_unset_changed_callback_not_supported_now,
+		system_setting_get_motion_activation,
+		NULL,
+		system_setting_set_changed_callback_motion_activation,
+		system_setting_unset_changed_callback_motion_activation,
 		NULL,
 		NULL		/* user data */
 	},
-#else
 	{
 		SYSTEM_SETTINGS_KEY_NETWORK_FLIGHT_MODE,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
@@ -344,19 +305,6 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-#endif
-#ifdef TIZEN_WEARABLE
-	{
-		SYSTEM_SETTINGS_KEY_NETWORK_WIFI_NOTIFICATION,
-		SYSTEM_SETTING_DATA_TYPE_BOOL,
-		system_setting_get_not_supported_now,
-		system_setting_set_not_supported_now,
-		system_setting_set_changed_callback_not_supported_now,
-		system_setting_unset_changed_callback_not_supported_now,
-		NULL,
-		NULL		/* user data */
-	},
-#else
 	{
 		SYSTEM_SETTINGS_KEY_NETWORK_WIFI_NOTIFICATION,
 		SYSTEM_SETTING_DATA_TYPE_BOOL,
@@ -367,7 +315,6 @@ system_setting_s system_setting_table[] = {
 		NULL,
 		NULL		/* user data */
 	},
-#endif
 	{
 		SYSTEM_SETTINGS_KEY_LOCK_STATE,
 		SYSTEM_SETTING_DATA_TYPE_INT,
@@ -387,9 +334,9 @@ static void _dump_context()
 {
 	int i;
 	/*int max = SYSTEM_SETTINGS_MAX; */
-	int max = sizeof(system_setting_table)/sizeof(system_setting_s) -1 ;
+	int max = sizeof(system_setting_table) / sizeof(system_setting_s) - 1 ;
 
-	for (i=0; i<27; i++) {
+	for (i = 0; i < 27; i++) {
 		LOGE("[%s] system_setting_table[i].key = %d", __FUNCTION__, system_setting_table[i].key);
 		LOGE("[%s] system_setting_table[i].data_type = %d", __FUNCTION__, system_setting_table[i].data_type);
 		LOGE("[%s] system_setting_table[i].get_value_cb = %x", __FUNCTION__, system_setting_table[i].get_value_cb);
@@ -429,25 +376,27 @@ static int _dump_context_node(int key)
 
 int system_settings_get_item(system_settings_key_e key, system_setting_h *item)
 {
-	int index = 0;
+	LOGE("Enter [%s], key=%d", __FUNCTION__, key);
 
 	if (!(key >= 0 && SYSTEM_SETTINGS_KEY_MAX > key)) {
+		LOGE("Enter [%s] catch invalid parameter error (%d) ", __FUNCTION__, key);
 		return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
 	}
 #if 0
 	_dump_context();
 #endif
+	int index = 0;
 	while (system_setting_table[index].key != SYSTEM_SETTINGS_MAX) {
 		if (system_setting_table[index].key == key) {
 			*item = &system_setting_table[index];
 			LOGE("Enter [%s], index = %d, key = %d, type = %d", __FUNCTION__, index, key, (*item)->data_type);
-			return 0;
+			return SYSTEM_SETTINGS_ERROR_NONE;
 		}
 
 		index++;
 	}
 
-	return -1;
+	return TIZEN_ERROR_INVALID_PARAMETER;
 }
 
 int system_settings_get_value(system_settings_key_e key, system_setting_data_type_e data_type, void **value)
@@ -495,7 +444,7 @@ int system_settings_set_value(system_settings_key_e key, system_setting_data_typ
 
 	int ret = system_settings_get_item(key, &system_setting_item);
 
-	if (0 != ret) {
+	if (0 != ret ) {
 		LOGE("[%s] INVALID_PARAMETER(0x%08x) : invalid key", __FUNCTION__, SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER);
 		return SYSTEM_SETTINGS_ERROR_NOT_SUPPORTED;
 	}
@@ -518,12 +467,13 @@ int system_settings_set_value(system_settings_key_e key, system_setting_data_typ
 
 int system_settings_set_value_int(system_settings_key_e key, int value)
 {
+	LOGE("Enter [%s]", __FUNCTION__);
 	if (!(key >= 0 && SYSTEM_SETTINGS_KEY_MAX > key)) {
 		return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
 	}
 
 	int *ptr = &value;
-	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_INT,(void *)ptr);
+	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_INT, (void *)ptr);
 }
 
 int system_settings_get_value_int(system_settings_key_e key, int *value)
@@ -544,7 +494,7 @@ int system_settings_set_value_bool(system_settings_key_e key, bool value)
 	}
 
 	bool *ptr = &value;
-	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_BOOL,(void *)ptr);
+	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_BOOL, (void *)ptr);
 }
 
 int system_settings_get_value_bool(system_settings_key_e key, bool *value)
@@ -582,10 +532,7 @@ int system_settings_set_value_string(system_settings_key_e key, const char *valu
 	}
 
 
-	if (key == SYSTEM_SETTINGS_KEY_DEFAULT_FONT_TYPE)
-		return SYSTEM_SETTINGS_ERROR_INVALID_PARAMETER;
-
-	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_STRING,(void *)value);
+	return system_settings_set_value(key, SYSTEM_SETTING_DATA_TYPE_STRING, (void *)value);
 }
 
 int system_settings_get_value_string(system_settings_key_e key, char **value)
@@ -598,12 +545,6 @@ int system_settings_get_value_string(system_settings_key_e key, char **value)
 	return system_settings_get_value(key, SYSTEM_SETTING_DATA_TYPE_STRING, (void **)value);
 }
 
-
-/*
-	- START
-		- system_settings_set_changed_cb
-			-> int (*system_setting_set_changed_callback_cb)(key, callback, user_data)
-*/
 
 /*PUBLIC*/
 int system_settings_set_changed_cb(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)

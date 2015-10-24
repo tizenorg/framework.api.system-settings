@@ -453,6 +453,7 @@ void list_item_touch_handler15_2(void *data, Evas_Object *obj, void *event_info)
 
 }
 
+#if 0
 void list_item_touch_handler23(void *data, Evas_Object *obj, void *event_info)
 {
 	SETTING_TRACE(">>>>>>>> GET tap and hold delay ");
@@ -482,6 +483,7 @@ void list_item_touch_handler24(void *data, Evas_Object *obj, void *event_info)
 	SETTING_TRACE(" tap and delay = %d ", delay);
 
 }
+#endif
 
 void list_item_touch_handler25(void *data, Evas_Object *obj, void *event_info)
 {
@@ -830,9 +832,10 @@ static Evas_Object *_create_list_winset(Evas_Object *parent, struct appdata *ad)
 	elm_list_item_append(li, "get notification ringtone ", NULL, NULL, list_item_touch_handler15_1, ad);
 	elm_list_item_append(li, "get notification ringtone - exception ", NULL, NULL, list_item_touch_handler15_2, ad);
 
+#if 0
 	elm_list_item_append(li, "get - tap and hold delay ", NULL, NULL, list_item_touch_handler23, ad);
 	elm_list_item_append(li, "set - tap and hold delay ", NULL, NULL, list_item_touch_handler24, ad);
-
+#endif
 	elm_list_item_append(li, "lockscreen - extention test ", NULL, NULL, list_item_touch_handler25, ad);
 	elm_list_item_append(li, "get default font ", NULL, NULL, list_item_touch_handler26, ad);
 
@@ -891,23 +894,23 @@ static int _rotation_cb(enum appcore_rm mode, void *data)
 	int angle;
 
 	switch (mode) {
-	case APPCORE_RM_LANDSCAPE_NORMAL:
-		angle = -90;
-		break;
+		case APPCORE_RM_LANDSCAPE_NORMAL:
+			angle = -90;
+			break;
 
-	case APPCORE_RM_LANDSCAPE_REVERSE:
-		angle = 90;
-		break;
+		case APPCORE_RM_LANDSCAPE_REVERSE:
+			angle = 90;
+			break;
 
-	case APPCORE_RM_PORTRAIT_REVERSE:
-		angle = 180;
-		break;
+		case APPCORE_RM_PORTRAIT_REVERSE:
+			angle = 180;
+			break;
 
-	case APPCORE_RM_UNKNOWN:
-	case APPCORE_RM_PORTRAIT_NORMAL:
-	default:
-		angle = 0;
-		break;
+		case APPCORE_RM_UNKNOWN:
+		case APPCORE_RM_PORTRAIT_NORMAL:
+		default:
+			angle = 0;
+			break;
 	}
 
 	elm_win_rotation_with_resize_set(ad->win_main, angle);

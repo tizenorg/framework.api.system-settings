@@ -29,5 +29,5 @@
 * System Settings API provides functions for getting the system configuration related to user preferences.
 * The main features of the System Settings API include accessing system-wide configurations, such as ringtones, wallpapers, and etc.
 *
-* For more information on feature, see <a href="../org.tizen.mobile.native.appprogramming/html/guide/system/system_settings.htm">System Settings Programming Guide.</a>
+* For more information on feature, see <a href="https://developer.tizen.org/development/guides/native-application/system/system-settings">System Settings Programming Guide.</a>
 */

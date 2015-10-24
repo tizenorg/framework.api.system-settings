@@ -2,7 +2,7 @@ Name:       capi-system-system-settings
 Summary:    A System Settings library in Tizen Native API
 Version:    0.0.2
 Release:    3
-Group:      TO_BE/FILLED_IN
+Group:      System/System Info
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
 BuildRequires:  cmake
@@ -14,28 +14,29 @@ BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(ecore-x)
 BuildRequires:  pkgconfig(ecore-file)
 BuildRequires:  pkgconfig(appcore-efl)
+BuildRequires:  pkgconfig(capi-appfw-application)
 BuildRequires:  pkgconfig(capi-base-common)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gobject-2.0)
 BuildRequires:  pkgconfig(fontconfig)
 BuildRequires:  pkgconfig(libxml-2.0)
-BuildRequires:  pkgconfig(pkgmgr)
-BuildRequires:  pkgconfig(pkgmgr-info)
-BuildRequires:  pkgconfig(efl-assist)
+BuildRequires:  pkgconfig(eventsystem)
+BuildRequires:  pkgconfig(bundle)
 
 Requires(post): /sbin/ldconfig  
 Requires(postun): /sbin/ldconfig
 
 %description
-
+System setting api for get,set configuration
 
 %package devel
 Summary:  A System Settings library in Tizen Native API (Development)
-Group:    TO_BE/FILLED_IN
+Group:    System/System Info
 Requires: %{name} = %{version}-%{release}
 Requires:  pkgconfig(capi-base-common)
 
 %description devel
+System setting api for get,set configuration
 
 
 

@@ -10,7 +10,7 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(requires "elementary ecore ecore-x ecore-file dlog vconf appcore-efl capi-base-common glib-2.0 gobject-2.0 fontconfig libxml-2.0 pkgmgr pkgmgr-info efl-assist")
+SET(requires "elementary ecore ecore-x ecore-file dlog vconf appcore-efl capi-base-common glib-2.0 gobject-2.0 fontconfig libxml-2.0 eventsystem bundle capi-appfw-application")
 SET(pc_requires "capi-base-common")
 
 IF(TIZEN_WEARABLE)

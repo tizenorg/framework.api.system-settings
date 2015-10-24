@@ -161,7 +161,7 @@ static void utc_system_settings_get_bool_p(void)
 
 static void utc_system_settings_set_int_p(void)
 {
-	int retcode =system_settings_set_value_int(SYSTEM_SETTINGS_KEY_FONT_SIZE, SYSTEM_SETTINGS_FONT_SIZE_NORMAL);
+	int retcode = system_settings_set_value_int(SYSTEM_SETTINGS_KEY_FONT_SIZE, SYSTEM_SETTINGS_FONT_SIZE_NORMAL);
 
 	if (retcode == SYSTEM_SETTINGS_ERROR_NONE) {
 		dts_pass(API_NAME_SETTINGS_SET_VALUE_INT, "passed");

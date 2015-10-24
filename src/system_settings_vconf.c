@@ -190,25 +190,25 @@ static void system_setting_vconf_event_cb100(keynode_t *node, void *event_data)
 static system_setting_vconf_event_cb system_setting_vconf_get_event_cb_slot(int slot)
 {
 	switch (slot) {
-	case 0:
-		return system_setting_vconf_event_cb0;
+		case 0:
+			return system_setting_vconf_event_cb0;
 
-	case 1:
-		return system_setting_vconf_event_cb1;
+		case 1:
+			return system_setting_vconf_event_cb1;
 
-	case 2:
-		return system_setting_vconf_event_cb2;
+		case 2:
+			return system_setting_vconf_event_cb2;
 
-	case 3:
-		return system_setting_vconf_event_cb3;
+		case 3:
+			return system_setting_vconf_event_cb3;
 
-	case 4:
-		return system_setting_vconf_event_cb4;
-	case 100:
-		return system_setting_vconf_event_cb100;
+		case 4:
+			return system_setting_vconf_event_cb4;
+		case 100:
+			return system_setting_vconf_event_cb100;
 
-	default:
-		return NULL;
+		default:
+			return NULL;
 	}
 }
 
