@@ -2084,7 +2084,7 @@ int system_setting_get_lock_state(system_settings_key_e key, system_setting_data
 {
 	int vconf_value;
 
-	if (system_setting_vconf_get_value_int(VCONFKEY_IDLE_LOCK_STATE, &vconf_value)) {
+	if (system_setting_vconf_get_value_int(VCONFKEY_IDLE_LOCK_STATE_READ_ONLY, &vconf_value)) {
 		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
 	}
 	*value = (void *)vconf_value;
@@ -2098,7 +2098,7 @@ int system_setting_set_lock_state(system_settings_key_e key, system_setting_data
 	int *vconf_value;
 	vconf_value = (int *)value;
 
-	if (system_setting_vconf_set_value_int(VCONFKEY_IDLE_LOCK_STATE, *vconf_value)) {
+	if (system_setting_vconf_set_value_int(VCONFKEY_IDLE_LOCK_STATE_READ_ONLY, *vconf_value)) {
 		return SYSTEM_SETTINGS_ERROR_IO_ERROR;
 	}
 	SETTING_TRACE_END;
@@ -2107,12 +2107,12 @@ int system_setting_set_lock_state(system_settings_key_e key, system_setting_data
 
 int system_setting_set_changed_callback_lock_state(system_settings_key_e key, system_settings_changed_cb callback, void *user_data)
 {
-	return system_setting_vconf_set_changed_cb(VCONFKEY_IDLE_LOCK_STATE, SYSTEM_SETTINGS_KEY_LOCK_STATE, 4, user_data);
+	return system_setting_vconf_set_changed_cb(VCONFKEY_IDLE_LOCK_STATE_READ_ONLY, SYSTEM_SETTINGS_KEY_LOCK_STATE, 4, user_data);
 }
 
 int system_setting_unset_changed_callback_lock_state(system_settings_key_e key)
 {
-	return system_setting_vconf_unset_changed_cb(VCONFKEY_IDLE_LOCK_STATE, 4);
+	return system_setting_vconf_unset_changed_cb(VCONFKEY_IDLE_LOCK_STATE_READ_ONLY, 4);
 }
 
 
